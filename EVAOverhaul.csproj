@@ -1,0 +1,101 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    EVA Overhaul for KSP 1.12.5
+
+    Your KSP folder is NOT set in this file. Copy LocalDev.props.example to LocalDev.props
+    and put your path in there. LocalDev.props is personal: don't upload it.
+    You can also pass it on the command line:  dotnet build -c Release -p:KSPDir="C:\path\to\Kerbal Space Program"
+  -->
+
+  <!-- Your personal settings (KSP folder). Optional: if it's missing, the Steam default below is used. -->
+  <Import Project="LocalDev.props" Condition="Exists('LocalDev.props')" />
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>EVAOverhaul</AssemblyName>
+    <RootNamespace>EVAOverhaul</RootNamespace>
+    <LangVersion>7.3</LangVersion>
+    <Nullable>disable</Nullable>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <DebugType>portable</DebugType>
+
+    <!-- Used to name the release zip. Keep in step with Properties\AssemblyInfo.cs and EVAOverhaul.version. -->
+    <Version>1.1.0</Version>
+
+    <!-- Fallback only. Set your real path in LocalDev.props. -->
+    <KSPDir Condition="'$(KSPDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program</KSPDir>
+
+    <!-- Windows: KSP_x64_Data\Managed | Linux: KSP_Data/Managed | macOS: KSP.app/Contents/Resources/Data/Managed -->
+    <KSPManaged Condition="'$(KSPManaged)' == ''">$(KSPDir)\KSP_x64_Data\Managed</KSPManaged>
+
+    <!-- Set to false if you don't want each build copied straight into your KSP GameData. -->
+    <DeployToKSP Condition="'$(DeployToKSP)' == ''">true</DeployToKSP>
+  </PropertyGroup>
+
+  <!-- Lets the project build without installing the .NET Framework 4.7.2 targeting pack separately. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- KSP / Unity references. Private=false means "do NOT copy these into the output" - KSP already ships them. -->
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(KSPManaged)\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(KSPManaged)\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(KSPManaged)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>$(KSPManaged)\UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>$(KSPManaged)\UnityEngine.InputLegacyModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- The GameData folder in this repo is content, not code. -->
+  <ItemGroup>
+    <None Include="GameData\**\*" />
+  </ItemGroup>
+
+  <!-- After every build: copy the .cfg files and the compiled DLL into <KSP>\GameData\EVAOverhaul -->
+  <Target Name="DeployToGameData" AfterTargets="Build" Condition="'$(DeployToKSP)' == 'true' And Exists('$(KSPDir)\GameData')">
+    <ItemGroup>
+      <ModContent Include="GameData\EVAOverhaul\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(ModContent)" DestinationFolder="$(KSPDir)\GameData\EVAOverhaul\%(RecursiveDir)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(KSPDir)\GameData\EVAOverhaul\Plugins" />
+    <Message Importance="high" Text="EVAOverhaul deployed to $(KSPDir)\GameData\EVAOverhaul" />
+  </Target>
+
+  <!-- Release builds only: make Releases\EVAOverhaul-<Version>.zip, laid out the way CKAN and players expect. -->
+  <Target Name="PackageRelease" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+    <PropertyGroup>
+      <StageDir>$(MSBuildProjectDirectory)\obj\package\</StageDir>
+      <ReleaseDir>$(MSBuildProjectDirectory)\Releases\</ReleaseDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <PkgContent Include="GameData\EVAOverhaul\**\*" />
+      <PkgDocs Include="README.md" Condition="Exists('README.md')" />
+      <PkgDocs Include="LICENSE" Condition="Exists('LICENSE')" />
+    </ItemGroup>
+    <RemoveDir Directories="$(StageDir)" />
+    <Copy SourceFiles="@(PkgContent)" DestinationFolder="$(StageDir)GameData\EVAOverhaul\%(RecursiveDir)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(StageDir)GameData\EVAOverhaul\Plugins" />
+    <Copy SourceFiles="@(PkgDocs)" DestinationFolder="$(StageDir)GameData\EVAOverhaul" />
+    <MakeDir Directories="$(ReleaseDir)" />
+    <ZipDirectory SourceDirectory="$(StageDir)" DestinationFile="$(ReleaseDir)EVAOverhaul-$(Version).zip" Overwrite="true" />
+    <Message Importance="high" Text="Release zip: $(ReleaseDir)EVAOverhaul-$(Version).zip" />
+  </Target>
+
+</Project>

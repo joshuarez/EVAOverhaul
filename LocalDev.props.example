@@ -1,0 +1,10 @@
+<Project>
+  <!--
+    Copy this file, rename the copy to LocalDev.props, and put YOUR KSP folder below
+    (the folder that contains KSP_x64.exe). Use backslashes. No quotes.
+    LocalDev.props is just for your PC - don't upload it.
+  -->
+  <PropertyGroup>
+    <KSPDir>C:\Games\Kerbal Space Program</KSPDir>
+  </PropertyGroup>
+</Project>
